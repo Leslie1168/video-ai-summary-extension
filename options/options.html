@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>视频AI总结 · 设置</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>视频AI总结 · 设置</h1>
+      <p class="lead">
+        填入 DeepSeek 的 API Key 即可开始使用。模型 Key 保存在浏览器扩展设置中（可能随浏览器同步），仅发送到你配置的模型接口。联网开启时，问题和视频标题发送到搜索服务，检索摘录与视频素材一并提交给模型。
+      </p>
+
+      <section class="card">
+        <h2>1 · 模型服务</h2>
+
+        <label class="field">
+          <span class="label">API Key</span>
+          <span class="hint">
+            到
+            <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noreferrer"
+              >platform.deepseek.com/api_keys</a
+            >
+            创建。格式形如 <code>sk-xxxxxxxx</code>。新账号通常有赠送额度。
+          </span>
+          <span class="input-row">
+            <input id="apiKey" type="password" placeholder="sk-..." autocomplete="off" spellcheck="false" />
+            <button id="toggle-key" type="button" class="ghost">显示</button>
+          </span>
+        </label>
+
+        <label class="field">
+          <span class="label">接口地址 Base URL</span>
+          <span class="hint"
+            >默认 <code>https://api.deepseek.com</code>。若用其它 OpenAI 兼容服务（通义/Kimi/智谱/本地
+            Ollama），改这里即可，插件会自动补 <code>/v1/chat/completions</code>。</span
+          >
+          <input id="baseUrl" type="text" placeholder="https://api.deepseek.com" spellcheck="false" />
+        </label>
+
+        <label class="field">
+          <span class="label">模型</span>
+          <span class="hint">
+            <code>deepseek-flash</code>（即 DeepSeek-V4.1-Flash）快而便宜，日常总结够用，推荐；
+            <code>deepseek-v4-pro</code> 更强但更慢更贵。
+            <code>deepseek-chat</code> 是旧名，目前仍可用，但已不在官方文档列表中，不建议长期依赖。
+          </span>
+          <input id="model" type="text" placeholder="deepseek-flash" spellcheck="false" />
+        </label>
+
+        <div class="row">
+          <button id="btn-test" class="ghost">测试连接</button>
+          <span id="test-result" class="test-result"></span>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>2 · 总结偏好</h2>
+
+        <label class="field">
+          <span class="label">默认详细程度</span>
+          <select id="style">
+            <option value="brief">速览 — 只看结论</option>
+            <option value="standard">标准 — 4~7 条要点</option>
+            <option value="detailed">精读 — 8~15 条要点</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span class="label">创造性（temperature）</span>
+          <span class="hint">越低越贴素材、越稳定。建议 0.2 ~ 0.4。</span>
+          <span class="input-row">
+            <input id="temperature" type="range" min="0" max="1" step="0.1" />
+            <output id="temperature-out" class="output">0.3</output>
+          </span>
+        </label>
+
+        <label class="field">
+          <span class="label">自定义要求（可选）</span>
+          <span class="hint"
+            >每次生成都会附加这段要求，优先级最高。例如"用初中生能懂的话解释"、"重点提取可执行的步骤"。</span
+          >
+          <textarea id="customPrompt" rows="3" placeholder="例如：请用大白话总结，不要出现英文术语。"></textarea>
+        </label>
+      </section>
+
+      <section class="card">
+        <h2>3 · 联网搜索</h2>
+        <label class="field"><span class="label">搜索服务</span>
+          <select id="searchProvider"><option value="auto">自动搜索 · 360 / 搜狗（无需 Key）</option><option value="bing">Bing · 无需额外 Key</option><option value="tavily">Tavily · 搜索 API（可选）</option></select>
+          <span class="hint">默认检索 360 / 搜狗公开网页摘录，可能受搜索站点限流或相关性影响。若需要更丰富的摘录，可改用 Tavily。</span>
+        </label>
+        <label class="field"><span class="label">Tavily API Key（仅选 Tavily 时需要）</span>
+          <input id="tavilyKey" type="password" autocomplete="off" placeholder="tvly-…" spellcheck="false" />
+          <span class="hint">在 <a href="https://app.tavily.com" target="_blank" rel="noreferrer">Tavily</a> 获取；用量和费用以服务商为准。搜索 Key 仅保存在本机，不随浏览器同步。</span>
+        </label>
+        <p class="hint">在侧边栏输入框左下角开启「联网搜索」。关闭时仅依据本视频回答；开启时显示本次搜索来源。检索失败会明确提示，不会假装已联网。</p>
+      </section>
+
+      <div class="actions">
+        <button id="btn-save" class="primary">保存设置</button>
+        <span id="save-result" class="save-result"></span>
+      </div>
+
+      <section class="card muted">
+        <h2>使用提示</h2>
+        <ul>
+          <li>
+            <b>B站字幕需要登录</b>：B站仅在登录状态下才下发 AI 字幕。用你自己的浏览器登录 B站即可，
+            插件会自动带上登录态，无需把账号密码给任何人。
+          </li>
+          <li>
+            <b>抖音基本没有字幕</b>：抖音绝大多数视频没有字幕轨，插件会用「文案 + 话题 + 评论区」来生成总结，
+            并在结果里明确标注"基于推断"。这是平台限制，不是插件故障。
+          </li>
+          <li><b>刚安装后</b>：已经打开的视频页需要按一次 <code>F5</code> 刷新，扩展脚本才会注入。</li>
+          <li>
+            <b>更新扩展文件后</b>：一定要到 <code>edge://extensions</code> 点一次「重新加载」。
+            否则侧边栏会是新版、后台脚本还是旧版，追问会一直卡住。出现「扩展后台还在跑旧版本」提示条时，
+            点里面的「重新加载扩展」按钮也能修复。
+          </li>
+          <li><b>快捷键</b>：在侧边栏里按 <code>Ctrl/Cmd + Enter</code> 可直接生成总结。</li>
+        </ul>
+      </section>
+    </div>
+
+    <script type="module" src="options.js"></script>
+  </body>
+</html>

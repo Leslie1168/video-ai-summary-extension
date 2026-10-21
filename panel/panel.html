@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>视频AI总结</title>
+    <link rel="stylesheet" href="panel.css" />
+    <link rel="stylesheet" href="studio.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-symbol">✦</span>
+        <div><span>视频AI总结</span><small>看懂视频，接着聊。</small></div>
+      </div>
+      <div class="topbar-actions">
+        <button id="btn-refresh" class="icon-btn" title="重新读取当前页面" aria-label="重新读取当前页面">↻</button>
+        <button id="btn-options" class="icon-btn" title="设置" aria-label="设置">⚙</button>
+      </div>
+    </header>
+
+    <div id="bg-warning" class="bg-warning hidden" role="alert">
+      <div class="bg-warning-text">
+        <strong>追问会一直卡住：扩展后台还在跑旧版本</strong>
+        <span>更新扩展文件后需要重新加载一次，否则面板是新版、后台仍是旧版，追问会一直没响应。点右侧按钮重新加载（面板会关闭；重新打开后若提示读取失败，在视频页按一次 F5 即可），总结和对话会保留。</span>
+      </div>
+      <button id="btn-reload-ext" type="button">重新加载扩展</button>
+    </div>
+
+    <main id="summary-main">
+      <!-- 空状态 -->
+      <section id="view-empty" class="view">
+        <div class="empty">
+          <div class="empty-art">▷</div><p class="empty-title">打开一个视频</p>
+          <p class="empty-sub">
+            在 <b>哔哩哔哩</b> 或 <b>抖音</b> 的视频页面点这里，就能提取字幕/文案并生成 AI 总结。
+          </p>
+        </div>
+      </section>
+
+      <!-- 视频信息 -->
+      <section id="view-video" class="view hidden">
+        <div class="card video-card">
+          <img id="cover" class="cover" alt="" />
+          <div class="video-meta">
+            <h1 id="v-title" class="v-title"></h1>
+            <p id="v-author" class="v-author"></p>
+            <p id="v-stats" class="v-stats"></p>
+            <div id="v-badges" class="badges"></div>
+            <button
+              id="btn-copy-data"
+              class="mini"
+              title="复制采集到的原始数据（JSON）。可粘贴给 WorkBuddy，用 Skill 重新生成总结，或存成文件后运行 python summarize.py --json 文件"
+            >
+              ⧉ 复制数据
+            </button>
+          </div>
+        </div>
+
+        <div id="notes" class="notes hidden"></div>
+
+        <div class="control-row">
+          <div class="seg" id="style-seg">
+            <button data-style="brief">速览</button>
+            <button data-style="standard" class="active">标准</button>
+            <button data-style="detailed">精读</button>
+          </div>
+          <button id="btn-generate" class="primary">生成总结</button>
+        </div>
+
+        <div id="status" class="status hidden"></div>
+      </section>
+
+      <!-- 结果 -->
+      <section id="view-result" class="view hidden">
+        <div class="result-head">
+          <span class="result-label">AI 总结</span>
+          <div class="result-actions">
+            <button id="btn-chat-clear" class="ghost" title="清空追问，保留视频总结">新对话</button>
+            <button id="btn-copy" class="ghost">复制</button>
+            <button id="btn-export" class="ghost">导出 .md</button>
+            <button id="btn-stop" class="ghost danger hidden">停止</button>
+          </div>
+        </div>
+        <article id="output" class="markdown"></article>
+      <div id="chat-placeholder" class="chat-placeholder">
+        <p>有疑问，可以接着问。</p>
+        <div id="chat-suggestions" class="suggestions">
+          <button type="button" data-question="请用更通俗的语言解释视频里的核心观点。">讲得更通俗</button>
+          <button type="button" data-question="请把视频中可执行的建议整理成行动清单。">整理行动清单</button>
+          <button type="button" data-question="视频中哪些结论的依据不足，需要进一步核实？">有哪些疑点</button>
+        </div>
+      </div>
+      <div id="chat-messages" class="chat-messages" role="log" aria-label="对话记录"></div>
+
+      </section>
+      <div id="error" class="error hidden" role="alert"></div>
+    </main>
+
+    <section id="chat-section" class="chat-section" aria-label="提问输入框">
+      <form id="chat-form" class="composer">
+        <label for="chat-input" class="sr-only">向视频 AI 提问</label>
+        <textarea id="chat-input" rows="2" maxlength="4000" placeholder="生成总结后，就可以开始提问" disabled></textarea>
+        <div class="composer-actions">
+          <button id="btn-web" class="web-toggle" type="button" aria-pressed="false" title="开启后结合网页搜索回答">◎ 联网搜索</button>
+          <span id="chat-scope">仅依据本视频</span>
+          <button id="btn-send" class="send-btn" type="submit" aria-label="发送问题" title="发送 · Enter" disabled>↑</button>
+          <button id="btn-chat-stop" class="send-btn stop hidden" type="button" aria-label="停止回答" title="停止回答">■</button>
+        </div>
+      </form>
+      <div class="composer-foot"><span id="chat-status" role="status" aria-live="polite"></span><span>Shift + Enter 换行</span></div>
+    </section>
+    <script type="module" src="panel.js"></script>
+  </body>
+</html>
+
