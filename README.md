@@ -27,6 +27,13 @@
 
 ---
 
+## 下载
+
+- **打包好的扩展**：到 [Releases](https://github.com/Leslie1168/video-ai-summary-extension/releases) 下载 `video-ai-summary-extension-v1.2.2.zip`；解压后得到 `video-ai-summary-extension` 文件夹，按下面「安装」步骤加载（Edge：`edge://extensions` → 开发人员模式 → 加载解压缩的扩展 → 选中这个文件夹）。
+- **源码**：直接 `Code → Download ZIP`，或 `git clone https://github.com/Leslie1168/video-ai-summary-extension.git`。
+
+---
+
 ## 安装
 
 ### 1. 准备模型 API Key
