@@ -1,4 +1,7 @@
-import { getSettings } from '../lib/llm.js';
+import { getSettings,saveSettings } from '../lib/llm.js';
+import {pendingSettings} from './controls.js';
+import {captureFrames,parseTime} from './frame-capture.js';
+import {saveConversation,saveArchive,legacyId,migrateLegacy} from '../lib/archive.js';
 import { renderMarkdown } from '../lib/markdown.js';
 import { SEARCH_ORIGINS, safeSource } from '../lib/search.js';
 
@@ -28,6 +31,9 @@ export function initChat({getContext, restoreSummary, seek}) {
   let turns = [], web = false, busy = false, port = null, key = '', epoch = 0, timer = null;
   let heartbeat = null;
   let backgroundOk = null;
+  let captureController = null;
+  let memoryId = '', created = Date.now(), lastSaved = 0;
+  let progressTimer=null;
   const scroller = $('summary-main');
   const list = $('chat-messages'), input = $('chat-input'), status = $('chat-status');
   const toggle = $('btn-web'), send = $('btn-send'), stop = $('btn-chat-stop');
@@ -38,11 +44,14 @@ export function initChat({getContext, restoreSummary, seek}) {
     send.disabled = busy || !ready() || !input.value.trim();
     input.disabled = !ready();
     toggle.disabled = busy || !ready();
+    for (const id of ['vision-enabled','vision-start','vision-end','vision-count']) $(id).disabled = busy || !!getContext().video?.archived;
     $('btn-chat-clear').disabled = busy || !turns.length;
     stop.classList.toggle('hidden', !busy);
     send.classList.toggle('hidden', busy);
     toggle.setAttribute('aria-pressed', String(web));
     toggle.classList.toggle('active', web);
+    $('search-settings').classList.toggle('hidden', !web);
+    $('search-query').disabled=busy;
     $('chat-scope').textContent = web ? '视频 + 网页资料' : '仅依据本视频';
     input.placeholder = ready() ? '继续追问这个视频…' : '生成总结后，就可以开始提问';
     placeholder.classList.toggle('hidden', turns.length > 0 || !ready());
@@ -97,25 +106,20 @@ export function initChat({getContext, restoreSummary, seek}) {
     }
     setBackgroundWarning(true);
   }
-  const trimCache = async (area) => {
-    const all = await area.get(null);
-    const older = Object.keys(all).filter(k => k.startsWith('video-chat:'))
-      .sort((a,b) => (all[b]?.updated || 0) - (all[a]?.updated || 0)).slice(10);
-    if (older.length) await area.remove(older);
-  };
   async function save() {
-    if (!key) return;
+    if (!key || (!getContext().summary && !turns.length)) return true;
     const itemKey = cacheKey();
-    const snapshot = {summary:getContext().summary, turns:turns.slice(-30), updated:Date.now()};
+    const data = snapshot();
     try {
-      // storage.session 只存活于当前浏览器会话，而且「重新加载扩展」会清空它；
-      // 再写一份 local，既能在重载扩展后恢复总结/对话，也能在下次打开同一视频时恢复。
-      await Promise.all([
-        chrome.storage.session.set({[itemKey]:snapshot}),
-        chrome.storage.local.set({[itemKey]:snapshot}),
-      ]);
-      await Promise.all([trimCache(chrome.storage.session), trimCache(chrome.storage.local)]);
-    } catch { status.textContent = '本地缓存写入失败；当前对话仍可继续。'; }
+      if(getContext().video?.archived) await saveArchive(data);
+      else {await saveConversation(itemKey,data);await chrome.storage.session.set({[itemKey]:data}).catch(()=>{});}
+      return true;
+    } catch { status.textContent = '记忆保存失败；请保持面板打开并重试，当前对话仍可查看。'; return false; }
+  }
+  function snapshot() {
+    const ctx=getContext();
+    return structuredClone({id:memoryId,memoryId,videoKey:key,created,updated:Date.now(),video:ctx.video,summary:ctx.summary,model:ctx.model,
+      summaryTrace:ctx.summaryTrace || [],summaryPending:!!ctx.generating || !!ctx.summaryPending,turns});
   }
   function drawSources(container, sources) {
     if (!sources?.length) return;
@@ -138,10 +142,25 @@ export function initChat({getContext, restoreSummary, seek}) {
       const assistant = document.createElement('div'); assistant.className = 'message assistant';
       const label = document.createElement('div'); label.className = 'message-label';
       label.textContent = turn.web ? '✦ AI · 联网回答' : '✦ AI · 视频回答'; assistant.append(label);
+      if(turn.trace?.length){
+        const details=document.createElement('details');details.className='answer-progress';details.open=busy && turn===turns.at(-1);
+        const head=document.createElement('summary');head.append(document.createTextNode('处理进度 · '));
+        const start=turn.created || turn.trace[0]?.at;
+        const end=busy && turn===turns.at(-1)?Date.now():(turn.finished || turn.trace.at(-1)?.at);
+        const elapsed=start && end?`${Math.max(0,Math.floor((end-start)/1000))} 秒`:'用时未记录';
+        const clock=document.createElement('span');clock.dataset.progressClock='';clock.textContent=`${elapsed} · 已输出 ${turn.answer.length} 字`;head.append(clock);details.append(head);
+        const steps=document.createElement('ol');for(const step of turn.trace){const li=document.createElement('li');li.textContent=`${start && step.at?Math.max(0,Math.floor((step.at-start)/1000))+'s · ':''}${step.text}`;steps.append(li);}details.append(steps);
+        if(turn.usage){const usage=document.createElement('p');usage.textContent=`${turn.usage.partial?'部分请求用量':'接口返回用量'}：输入 ${turn.usage.prompt_tokens ?? '未知'} / 输出 ${turn.usage.completion_tokens ?? '未知'} token`;details.append(usage);}
+        assistant.append(details);
+      }
       const body = document.createElement('div'); body.className = 'markdown';
       body.innerHTML = renderChatMarkdown(turn.answer || (busy && turn === turns.at(-1) ? '正在准备回答…' : '未生成回答。'));
       assistant.append(body);
       if (turn.error) { const error = document.createElement('p'); error.className = 'chat-error'; error.textContent = turn.error; assistant.append(error); }
+      if (turn.frameRange) {const note=document.createElement('p');note.className='message-label';note.textContent=`识屏采样：${turn.frameRange}`;assistant.append(note);}
+      if (turn.query) {const note=document.createElement('p');note.className='message-label';note.textContent=`本次搜索词：${turn.query}`;assistant.append(note);}
+      if (turn.searchNote) {const note=document.createElement('p');note.className='message-label';note.textContent=turn.searchNote;assistant.append(note);}
+      if (turn.truncated && turn === turns.at(-1) && !busy) {const button=document.createElement('button');button.type='button';button.className='continue-answer';button.textContent='继续补完';button.addEventListener('click',()=>void submit('请从上一条回答中断处继续补完，不要重复已写内容。'));assistant.append(button);}
       drawSources(assistant,turn.sources);
       list.append(assistant);
     }
@@ -154,6 +173,8 @@ export function initChat({getContext, restoreSummary, seek}) {
   }
   function finish(text = '') {
     busy = false;
+    if(turns.at(-1))turns.at(-1).finished=Date.now();
+    clearInterval(progressTimer);progressTimer=null;
     clearInterval(heartbeat); heartbeat = null;
     const oldPort = port; port = null;
     try { oldPort?.disconnect(); } catch { /* already disconnected */ }
@@ -161,6 +182,7 @@ export function initChat({getContext, restoreSummary, seek}) {
   }
   function abort() {
     if (!busy) return;
+    captureController?.abort();
     const turn = turns.at(-1);
     if (turn) turn.error = '已停止；未完成的回答不会进入后续上下文。';
     try { port?.postMessage({type:'abort'}); } catch { /* disconnected */ }
@@ -171,10 +193,31 @@ export function initChat({getContext, restoreSummary, seek}) {
     if (!question || busy || !ready()) return;
     if (question.length > 4000) { status.textContent = '问题请控制在 4000 字以内。'; return; }
     const ctx = getContext(), history = turns.slice();
-    const turn = {question, answer:'', complete:false, web, sources:[]};
+    const searchQuery=$('search-query').value.trim();
+    const turn = {question, answer:'', complete:false, web, sources:[],created:Date.now(),trace:[{at:Date.now(),text:'准备本次问题与视频资料'}]};
+    const trace=text=>{if(turn.trace.at(-1)?.text!==text){turn.trace.push({text,at:Date.now()});scheduleRender();}};
+    $('search-query').value='';
     turns.push(turn); busy = true; input.value = ''; input.style.height = '';
+    progressTimer=setInterval(()=>{if(busy)for(const clock of list.querySelectorAll('[data-progress-clock]')){if(clock.closest('.message')===list.lastElementChild)clock.textContent=`${Math.floor((Date.now()-turn.created)/1000)} 秒 · 已输出 ${turn.answer.length} 字`;}},1000);
+    void save();
     status.textContent = web ? '正在准备联网检索…' : '正在准备回答…'; render(true);
     const requestEpoch = epoch;
+    let frames = [];
+    try {
+      await pendingSettings;
+      if ($('vision-enabled').checked) {
+        const cfg = await getSettings();
+        if (new URL(cfg.baseUrl).hostname === 'api.deepseek.com' && cfg.model !== 'deepseek-flash') throw new Error('识屏请将模型设为 deepseek-flash（V4.1-Flash-1017）。');
+        const start=parseTime($('vision-start').value),end=parseTime($('vision-end').value);
+        captureController=new AbortController();
+        turn.frameRange=`${$('vision-start').value} – ${$('vision-end').value} · ${$('vision-count').value} 帧`;
+        frames=await captureFrames({tabId:ctx.tabId,start,end,count:Number($('vision-count').value),signal:captureController.signal,onProgress:text=>{status.textContent=text;}});
+      }
+      if (requestEpoch !== epoch || !busy) return;
+    } catch (err) {
+      if (requestEpoch !== epoch || !busy) return;
+      turn.error=err.message || String(err);input.value=question;finish('未发送，识屏或设置准备失败');return;
+    } finally {captureController=null;}
     let firstReplyTimer = null;
     const clearFirstReplyTimer = () => {
       if (firstReplyTimer) { clearTimeout(firstReplyTimer); firstReplyTimer = null; }
@@ -195,10 +238,12 @@ export function initChat({getContext, restoreSummary, seek}) {
         if (requestEpoch !== epoch || port !== current) return;
         clearFirstReplyTimer();
         if (backgroundOk !== true) setBackgroundWarning(false);
-        if (msg.type === 'status') status.textContent = msg.text;
+        if (msg.type === 'status') {status.textContent = msg.text;trace(msg.text);}
+        if (msg.type === 'search-query') {turn.query=msg.query;render();}
+        if (msg.type === 'answer-scope') {turn.web=!!msg.web;turn.searchNote=msg.note;if(!turn.web)turn.sources=[];render();}
         if (msg.type === 'sources') { turn.sources = msg.sources; turn.query = msg.query; render(); }
-        if (msg.type === 'delta') { turn.answer = msg.full; status.textContent = '正在回答…'; scheduleRender(); }
-        if (msg.type === 'done') { turn.answer = msg.full; turn.complete = true; finish('回答完成'); }
+        if (msg.type === 'delta') {if(!turn.answer)trace('已收到正文，正在生成回答');turn.answer = msg.full; status.textContent = '正在回答…'; scheduleRender(); if(Date.now()-lastSaved>2000){lastSaved=Date.now();void save();} }
+        if (msg.type === 'done') { turn.answer = msg.full; turn.complete = true;turn.usage=msg.usage;trace('本次生成结束');turn.truncated=!!msg.truncated; if(turn.truncated) turn.error='已达到本次输出上限，可点击继续补完。'; finish(turn.truncated ? '尚未写完' : '回答完成'); }
         if (msg.type === 'error') { turn.error = msg.error; input.value = question; finish('回答失败，可修改问题后重试'); }
         if (msg.type === 'aborted') abort();
       });
@@ -208,7 +253,7 @@ export function initChat({getContext, restoreSummary, seek}) {
           turn.error = '连接中断，请重试。'; input.value = question; finish('连接已中断');
         }
       });
-      current.postMessage({type:'start',video:ctx.video,summary:ctx.summary,question,history,web});
+      current.postMessage({type:'start',video:ctx.video,summary:ctx.summary,question,history,web,frames,searchQuery});
     } catch (err) {
       clearFirstReplyTimer();
       turn.error = `无法连接扩展后台：${err?.message || err}。请重新加载扩展后再试。`;
@@ -219,7 +264,7 @@ export function initChat({getContext, restoreSummary, seek}) {
   }
   toggle.addEventListener('click', async () => {
     if (busy) return;
-    if (web) { web = false; update(); return; }
+    if (web) { web = false; update(); await saveSettings({webEnabled:false}).catch(()=>{}); return; }
     try {
       // Request from the direct click to preserve Chrome's user gesture.
       const granted = await chrome.permissions.request({origins:[...SEARCH_ORIGINS, 'https://api.tavily.com/*']});
@@ -229,10 +274,11 @@ export function initChat({getContext, restoreSummary, seek}) {
         const {tavilyKey} = await chrome.storage.local.get('tavilyKey');
         if (!tavilyKey) { status.textContent = '请在设置中填写 Tavily Key，或选择自动搜索。'; return; }
       }
-      web = true; status.textContent = '已开启联网；问题及视频标题将用于搜索。'; update();
+      web = true; await saveSettings({webEnabled:true});status.textContent = '已开启联网；AI 会结合问题和视频规划搜索，用外部信息补充与核对。'; update();
     } catch (err) { status.textContent = `无法开启联网：${err.message}`; }
   });
   $('chat-form').addEventListener('submit', e => { e.preventDefault(); void submit(); });
+  $('btn-summary-continue').addEventListener('click',()=>void submit('请从视频总结中断处继续补完剩余内容，不要重复已有内容。'));
   input.addEventListener('input', () => { input.style.height = 'auto'; input.style.height = `${Math.min(input.scrollHeight, 130)}px`; update(); });
   input.addEventListener('keydown', e => {
     if (e.isComposing) return;
@@ -253,24 +299,49 @@ export function initChat({getContext, restoreSummary, seek}) {
       status.textContent = `重新加载失败：${err?.message || err}。请到 edge://extensions 手动点「重新加载」。`;
     }
   });
-  $('btn-chat-clear').addEventListener('click', () => { if (!busy) { turns=[]; status.textContent='已开始新对话'; render(); void save(); } });
+  $('btn-chat-clear').addEventListener('click', async () => {
+    if(busy) return;
+    const oldEpoch=epoch;
+    $('btn-chat-clear').disabled=true;
+    if(!await save() || epoch!==oldEpoch || busy) {update();return;}
+    memoryId=crypto.randomUUID();created=Date.now();turns=[];$('search-query').value='';
+    status.textContent='已开始新对话；旧对话已存入记忆库，不会用于新回答。';render();void save();
+  });
   $('chat-suggestions').addEventListener('click', e => { const button = e.target.closest('[data-question]'); if (button) void submit(button.dataset.question); });
   list.addEventListener('click', e => { const ts = e.target.closest('.ts'); if (ts) seek(ts.dataset.t); });
   void probeBackground();
+  void migrateLegacy().catch(()=>{status.textContent='旧记录迁移失败，可打开记忆库重试；原记录仍保留。';});
   return {
     update,
     save,
+    snapshot,
+    isBusy:()=>busy,
     abort,
+    async loadRecord(record) {
+      if(busy) throw new Error('该窗口仍有回答在生成，请返回原对话查看。');
+      epoch++;key=record.videoKey || record.video.url;memoryId=record.id;created=record.created;
+      turns=structuredClone(record.turns);input.value='';
+      restoreSummary(record.summary || '此记录没有视频总结，可结合下方历史对话继续提问。',record);
+      const cfg=await getSettings();
+      web=cfg.webEnabled!==false && await chrome.permissions.contains({origins:cfg.searchProvider==='tavily'?['https://api.tavily.com/*']:SEARCH_ORIGINS});
+      status.textContent='已打开所选记忆；只接续这段对话。';render();
+    },
     async setVideo(video) {
       abort(); epoch++; const thisEpoch=epoch;
       key = video ? String(video.url || `${video.platform}:${video.title}`).slice(0, 600) : '';
+      memoryId=crypto.randomUUID();created=Date.now();
       turns = []; web = false; input.value = ''; status.textContent = ''; render();
+      $('search-query').value='';
       if (!key) return;
       try {
-        let data = (await chrome.storage.session.get(cacheKey()))[cacheKey()];
-        if (!data) data = (await chrome.storage.local.get(cacheKey()))[cacheKey()];
+        const cfg=await getSettings();
+        const granted=await chrome.permissions.contains({origins:cfg.searchProvider==='tavily'?['https://api.tavily.com/*']:SEARCH_ORIGINS});
+        if(epoch!==thisEpoch) return;
+        web=cfg.webEnabled!==false && granted;update();
+        let data = (await chrome.storage.local.get(cacheKey()))[cacheKey()];
+        if (!data) data = (await chrome.storage.session.get(cacheKey()))[cacheKey()];
         if (epoch !== thisEpoch) return;
-        if (data) { turns=Array.isArray(data.turns) ? data.turns : []; restoreSummary(data.summary || ''); render(); }
+        if (data) {memoryId=data.memoryId || legacyId(key);created=data.created || data.updated || Date.now();turns=Array.isArray(data.turns) ? data.turns : []; restoreSummary(data.summary || '',data); render();}
       } catch { /* session cache optional */ }
     },
   };

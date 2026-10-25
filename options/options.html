@@ -10,7 +10,7 @@
     <div class="wrap">
       <h1>视频AI总结 · 设置</h1>
       <p class="lead">
-        填入 DeepSeek 的 API Key 即可开始使用。模型 Key 保存在浏览器扩展设置中（可能随浏览器同步），仅发送到你配置的模型接口。联网开启时，问题和视频标题发送到搜索服务，检索摘录与视频素材一并提交给模型。
+        填入 DeepSeek 的 API Key 即可开始使用。模型 Key 保存在浏览器扩展设置中（可能随浏览器同步），仅发送到你配置的模型接口。联网开启时，AI 会结合当前问题和视频素材生成关键词（也可手动填写），并发送到搜索服务，检索摘录与视频素材一并提交给模型。
       </p>
 
       <section class="card">
@@ -43,7 +43,7 @@
         <label class="field">
           <span class="label">模型</span>
           <span class="hint">
-            <code>deepseek-flash</code>（即 DeepSeek-V4.1-Flash）快而便宜，日常总结够用，推荐；
+            <code>deepseek-flash</code>（即 DeepSeek-V4.1-Flash-1017）快而便宜，日常总结够用，推荐；
             <code>deepseek-v4-pro</code> 更强但更慢更贵。
             <code>deepseek-chat</code> 是旧名，目前仍可用，但已不在官方文档列表中，不建议长期依赖。
           </span>
@@ -57,7 +57,10 @@
       </section>
 
       <section class="card">
-        <h2>2 · 总结偏好</h2>
+        <h2>2 · 总结偏好</h2><div class="field"><label>联网模式<select id="webMode"><option value="fast">快速 · 推荐</option><option value="deep">深入 · 使用思考设置</option></select></label><label>思考强度<select id="reasoningEffort"><option value="none">关闭 · 直接回答</option><option value="low">低 · 快速思考</option><option value="high">高 · 深入思考</option><option value="max">最高 · 复杂分析</option></select></label>
+<label>素材上下文<select id="contextChars"><option value="16000">约 1.6 万字</option><option value="32000">约 3.2 万字</option><option value="64000">约 6.4 万字</option><option value="128000">约 12.8 万字</option></select></label>
+<label>历史对话<select id="historyTurns"><option value="0">不带历史</option><option value="4">最近 4 轮</option><option value="8">最近 8 轮</option><option value="20">最近 20 轮</option></select></label>
+<label>单次输出额度<select id="maxTokens"><option value="8192">8K token</option><option value="16384">16K token · 推荐</option><option value="32768">32K token</option><option value="65536">64K token</option></select></label></div><p class="hint">思考强度仅对官方 DeepSeek 接口生效。上下文为素材与历史的文字字符预算；本轮问题、网页摘录和图片另计。快速联网关闭思考、最多 8K 输出、不自动续写；深入联网使用所选思考设置。达到上限可手动继续。</p>
 
         <label class="field">
           <span class="label">默认详细程度</span>
@@ -129,3 +132,5 @@
     <script type="module" src="options.js"></script>
   </body>
 </html>
+
+

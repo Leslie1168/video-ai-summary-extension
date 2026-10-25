@@ -14,12 +14,13 @@
         <div><span>视频AI总结</span><small>看懂视频，接着聊。</small></div>
       </div>
       <div class="topbar-actions">
+        <button id="btn-memory" class="icon-btn" title="查看和下载历史记忆" aria-label="查看和下载历史记忆">▤</button>
         <button id="btn-refresh" class="icon-btn" title="重新读取当前页面" aria-label="重新读取当前页面">↻</button>
         <button id="btn-options" class="icon-btn" title="设置" aria-label="设置">⚙</button>
       </div>
     </header>
 
-    <div id="bg-warning" class="bg-warning hidden" role="alert">
+    <section id="archive-banner" class="archive-banner hidden"><button id="btn-archive-back" type="button">‹ 记忆列表</button><strong id="archive-title"></strong><small>接续所选记录 · 原始字幕未随记忆保存</small></section><section id="memory-layer" class="memory-layer hidden" aria-label="侧边栏记忆库"><iframe id="memory-frame" title="侧边栏记忆库"></iframe></section><div id="bg-warning" class="bg-warning hidden" role="alert">
       <div class="bg-warning-text">
         <strong>追问会一直卡住：扩展后台还在跑旧版本</strong>
         <span>更新扩展文件后需要重新加载一次，否则面板是新版、后台仍是旧版，追问会一直没响应。点右侧按钮重新加载（面板会关闭；重新打开后若提示读取失败，在视频页按一次 F5 即可），总结和对话会保留。</span>
@@ -27,7 +28,10 @@
       <button id="btn-reload-ext" type="button">重新加载扩展</button>
     </div>
 
-    <main id="summary-main">
+    <main id="summary-main"><details class="ai-controls"><summary>✦ 模型与识屏 <small>V4.1-Flash-1017</small></summary><div class="ai-grid"><label>联网模式<select id="webMode"><option value="fast">快速 · 推荐</option><option value="deep">深入 · 使用思考设置</option></select></label><label>思考强度<select id="reasoningEffort"><option value="none">关闭 · 直接回答</option><option value="low">低 · 快速思考</option><option value="high">高 · 深入思考</option><option value="max">最高 · 复杂分析</option></select></label>
+<label>素材上下文<select id="contextChars"><option value="16000">约 1.6 万字</option><option value="32000">约 3.2 万字</option><option value="64000">约 6.4 万字</option><option value="128000">约 12.8 万字</option></select></label>
+<label>历史对话<select id="historyTurns"><option value="0">不带历史</option><option value="4">最近 4 轮</option><option value="8">最近 8 轮</option><option value="20">最近 20 轮</option></select></label>
+<label>单次输出额度<select id="maxTokens"><option value="8192">8K token</option><option value="16384">16K token · 推荐</option><option value="32768">32K token</option><option value="65536">64K token</option></select></label></div><p class="hint">自动保存。快速联网关闭思考、最多 8K 输出且不自动续写；深入联网使用下方设置。思考强度仅对官方 DeepSeek 接口生效。上下文按文字字符限制，图片另计；高强度会增加等待与用量。</p><p id="ai-save-status" role="status"></p></details>
       <!-- 空状态 -->
       <section id="view-empty" class="view">
         <div class="empty">
@@ -83,6 +87,7 @@
           </div>
         </div>
         <article id="output" class="markdown"></article>
+        <button id="btn-summary-continue" class="continue-answer hidden" type="button">继续补完总结</button>
       <div id="chat-placeholder" class="chat-placeholder">
         <p>有疑问，可以接着问。</p>
         <div id="chat-suggestions" class="suggestions">
@@ -100,7 +105,7 @@
     <section id="chat-section" class="chat-section" aria-label="提问输入框">
       <form id="chat-form" class="composer">
         <label for="chat-input" class="sr-only">向视频 AI 提问</label>
-        <textarea id="chat-input" rows="2" maxlength="4000" placeholder="生成总结后，就可以开始提问" disabled></textarea>
+        <details class="vision-controls"><summary>▧ 按时间范围识屏</summary><label><input id="vision-enabled" type="checkbox"> 发送问题时附带区间画面</label><div class="ai-grid"><label>开始时间<input id="vision-start" placeholder="03:00" value="00:00"></label><label>结束时间<input id="vision-end" placeholder="03:30" value="00:30"></label><label>采样数量<select id="vision-count"><option value="3">3 帧</option><option value="6" selected>6 帧</option><option value="8">8 帧</option></select></label></div><p class="hint">会临时跳转播放器采样，完成后恢复播放位置。保持视频页在前台、画面完整可见；截图仅发送至所配置的模型接口，不保存原图。抽样可能漏掉短暂画面。</p></details><label id="search-settings" class="search-settings hidden">本次搜索词（可改）<input id="search-query" type="text" maxlength="350" placeholder="留空由 AI 结合本次问题和视频生成搜索词"><small>每次发送后清空；可填写关键词指定搜索方向。</small></label><textarea id="chat-input" rows="2" maxlength="4000" placeholder="生成总结后，就可以开始提问" disabled></textarea>
         <div class="composer-actions">
           <button id="btn-web" class="web-toggle" type="button" aria-pressed="false" title="开启后结合网页搜索回答">◎ 联网搜索</button>
           <span id="chat-scope">仅依据本视频</span>
@@ -113,4 +118,5 @@
     <script type="module" src="panel.js"></script>
   </body>
 </html>
+
 

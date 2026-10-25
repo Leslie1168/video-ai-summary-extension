@@ -45,11 +45,14 @@ chrome.runtime.onConnect.addListener((port) => {
       const messages = buildMessages(msg.video, {
         style: msg.style || settings.style,
         customPrompt: msg.customPrompt ?? settings.customPrompt,
+        contextChars: settings.contextChars,
       });
 
+      let completion;
       const text = await chatStream({
         messages,
         settings,
+        onFinish:info => {completion = info;},
         signal: controller.signal,
         onReasoning: () => {
           try {
@@ -67,7 +70,7 @@ chrome.runtime.onConnect.addListener((port) => {
         },
       });
 
-      port.postMessage({ type: 'done', full: text });
+      port.postMessage({ type: 'done', full: text, truncated:completion?.truncated });
     } catch (err) {
       const aborted = err?.name === 'AbortError' || controller.signal.aborted;
       if (!aborted) {

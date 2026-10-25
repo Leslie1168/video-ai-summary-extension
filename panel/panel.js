@@ -1,8 +1,29 @@
+import {getMemory,downloadMemory} from '../lib/archive.js';
+import { initControls } from './controls.js';
 import { initChat } from './chat.js';
 import { getSettings, saveSettings } from '../lib/llm.js';
 import { renderMarkdown, escapeHtml as esc } from '../lib/markdown.js';
 
 const $ = (id) => document.getElementById(id);
+const archiveId=new URLSearchParams(location.search).get('memory');
+let memoryOpen=false,memoryLoaded=false;
+const memoryFrame=$('memory-frame');
+function sendLiveSession(){if(memoryLoaded)memoryFrame.contentWindow.postMessage({type:'current-session',id:chat.snapshot().id},location.origin);}
+function closeMemory(){memoryOpen=false;$('memory-layer').classList.add('hidden');el.btnRefresh.disabled=false;$('btn-memory').setAttribute('aria-pressed','false');$('btn-memory').textContent='▤';$('btn-memory').title='查看和下载历史记忆';$('btn-memory').setAttribute('aria-label','查看和下载历史记忆');}
+async function openMemory(){
+  if(archiveId){window.parent.postMessage({type:'archive-back'},location.origin);return;}
+  if(memoryOpen){closeMemory();return;}
+  await chat.save();
+  memoryOpen=true;$('memory-layer').style.top=document.querySelector('.topbar').getBoundingClientRect().bottom+'px';$('memory-layer').classList.remove('hidden');el.btnRefresh.disabled=true;$('btn-memory').setAttribute('aria-pressed','true');
+  $('btn-memory').textContent='↩';$('btn-memory').title='返回本视频，生成任务保持运行';$('btn-memory').setAttribute('aria-label','返回本视频');
+  if(!memoryLoaded){memoryLoaded=true;memoryFrame.src=chrome.runtime.getURL('memory/memory.html')+'?sidebar=1';}else sendLiveSession();
+}
+$('btn-memory').addEventListener('click',()=>void openMemory());
+$('btn-archive-back').addEventListener('click',()=>window.parent.postMessage({type:'archive-back'},location.origin));
+memoryFrame.addEventListener('load',sendLiveSession);
+window.addEventListener('message',event=>{if(event.origin!==location.origin || event.source!==memoryFrame.contentWindow)return;if(event.data?.type==='memory-ready')sendLiveSession();if(['memory-close','memory-open-live'].includes(event.data?.type))closeMemory();});
+window.addEventListener('resize',()=>{if(memoryOpen)$('memory-layer').style.top=document.querySelector('.topbar').getBoundingClientRect().bottom+'px';});
+void initControls();
 
 const el = {
   viewEmpty: $('view-empty'),
@@ -35,14 +56,16 @@ const state = {
   port: null,
   generating: false,
   renderTimer: null,
+  summaryTrace: [],
 };
 
 let collectEpoch = 0;
 let lastUrl = '';
 const chat = initChat({
-  getContext: () => ({video:state.video, summary:state.markdown, generating:state.generating}),
-  restoreSummary: summary => {
+  getContext: () => ({video:state.video, summary:state.markdown, generating:state.generating, tabId:state.tabId, model:state.modelName, summaryTrace:state.summaryTrace,summaryPending:state.archiveSummaryPending}),
+  restoreSummary: (summary,record) => {
     if (!summary) return;
+    if(record){state.summaryTrace=record.summaryTrace || [];state.archiveSummaryPending=!!record.summaryPending;}
     state.markdown = summary; paint(false); show(el.viewResult,true);
     el.btnGenerate.textContent = '重新生成'; chat.update();
   },
@@ -133,6 +156,8 @@ async function collectFromActiveTab() {
   setError('');
   show(el.viewResult, false);
   state.markdown = '';
+  state.summaryTrace=[];state.archiveSummaryPending=false;
+  show($('btn-summary-continue'),false);
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (epoch !== collectEpoch) return;
@@ -177,8 +202,9 @@ async function collectFromActiveTab() {
 function renderVideo(v) {
   el.cover.src = v.cover || '';
   el.cover.onerror = () => {
-    el.cover.src = '';
+    el.cover.onerror=null;el.cover.removeAttribute('src');el.cover.hidden=true;
   };
+  el.cover.hidden=!v.cover;
   el.title.textContent = v.title || '（无标题）';
   el.author.textContent = [v.author, v.publishTime, v.duration ? fmtTime(v.duration) : '']
     .filter(Boolean)
@@ -230,12 +256,14 @@ function renderVideo(v) {
 // ---------------------------------------------------------------- 生成
 
 function startGenerate() {
-  if (!state.video || state.generating) return;
+  if (!state.video || state.video.archived || state.generating) return;
 
   chat.abort();
   state.generating = true;
   chat.update();
   state.markdown = '';
+  state.summaryTrace=[{at:Date.now(),text:'开始根据视频素材生成总结'}];
+  state.archiveSummaryPending=false;
   el.output.innerHTML = '';
   setError('');
   show(el.viewResult, true);
@@ -253,18 +281,21 @@ function startGenerate() {
     if (state.port !== port || generationEpoch !== collectEpoch) return;
     if (msg.type === 'thinking') {
       // deepseek-flash 默认开思考模式，正文到来前会先有一段推理
-      if (!firstChunk) setStatus('模型正在思考…', true);
+      if (!firstChunk) {setStatus('模型正在思考…', true);if(state.summaryTrace.at(-1)?.text!=='模型正在分析素材')state.summaryTrace.push({at:Date.now(),text:'模型正在分析素材'});}
     } else if (msg.type === 'delta') {
       if (!firstChunk) {
         firstChunk = true;
+        state.summaryTrace.push({at:Date.now(),text:'开始输出视频总结'});
         setStatus('正在生成…', true);
       }
       state.markdown = msg.full;
       paint(true);
     } else if (msg.type === 'done') {
+      show($('btn-summary-continue'),!!msg.truncated);
       state.markdown = msg.full || state.markdown;
       paint(false);
-      finish('总结完成');
+      finish(msg.truncated ? '已达到输出上限，可在追问中要求继续补完。' : '总结完成');
+      if (msg.truncated) void chat.save();
     } else if (msg.type === 'aborted') {
       paint(false);
       finish('已停止');
@@ -284,6 +315,7 @@ function startGenerate() {
 
 function finish(statusText) {
   state.generating = false;
+  if(state.summaryTrace.length)state.summaryTrace.push({at:Date.now(),text:statusText || '生成中断'});
   el.btnGenerate.disabled = false;
   el.btnGenerate.textContent = state.markdown ? '重新生成' : '生成总结';
   show(el.btnStop, false);
@@ -367,30 +399,7 @@ el.btnCopyData.addEventListener('click', async () => {
   }
 });
 
-el.btnExport.addEventListener('click', () => {
-  const v = state.video || {};
-  const head = [
-    `# ${v.title || '视频总结'}`,
-    '',
-    `> 来源：${v.url || ''}`,
-    v.author ? `> 作者：${v.author}` : '',
-    `> 生成时间：${new Date().toLocaleString('zh-CN')}`,
-    `> 模型：${state.modelName || 'DeepSeek'}`,
-    '',
-    '---',
-    '',
-  ]
-    .filter((x) => x !== '')
-    .join('\n');
-
-  const blob = new Blob([head + state.markdown], { type: 'text/markdown;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${(v.title || '视频总结').replace(/[\\/:*?"<>|]/g, '_').slice(0, 50)}.md`;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 3000);
-});
+el.btnExport.addEventListener('click', () => {downloadMemory([chat.snapshot()],'md');});
 
 // 点击时间戳跳转播放
 el.output.addEventListener('click', (e) => {
@@ -402,6 +411,7 @@ el.output.addEventListener('click', (e) => {
 
 // 键盘：Ctrl/Cmd + Enter 生成
 document.addEventListener('keydown', (e) => {
+  if(memoryOpen || archiveId)return;
   if (e.target.closest?.('#chat-section')) return;
   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
     e.preventDefault();
@@ -423,6 +433,16 @@ document.addEventListener('keydown', (e) => {
     if (changes.model) state.modelName = changes.model.newValue;
   });
 
+  if(archiveId){
+    document.body.classList.add('archive-mode');show($('archive-banner'),true);
+    try{
+      const record=await getMemory(archiveId);if(!record)throw new Error('找不到这条记忆；请返回记忆列表刷新。');
+      state.video={...record.video,archived:true};state.markdown=record.summary;state.summaryTrace=record.summaryTrace || [];state.archiveSummaryPending=record.summaryPending;state.modelName=record.model || settings.model;
+      $('archive-title').textContent=record.video.title;renderVideo(state.video);show(el.viewEmpty,false);show(el.viewResult,true);
+      await chat.loadRecord(record);paint(false);
+    }catch(error){setError(esc(error.message || error));}
+    return;
+  }
   await collectFromActiveTab();
 
   // 页面切换/SPA 跳转后自动重新读取

@@ -3,6 +3,7 @@ import { getSettings, saveSettings, DEFAULT_SETTINGS } from '../lib/llm.js';
 const $ = (id) => document.getElementById(id);
 
 const fields = {
+  webMode: $('webMode'), reasoningEffort: $('reasoningEffort'), contextChars: $('contextChars'), historyTurns: $('historyTurns'), maxTokens: $('maxTokens'),
   apiKey: $('apiKey'),
   baseUrl: $('baseUrl'),
   model: $('model'),
@@ -23,6 +24,7 @@ const flash = (node, text, cls) => {
 
 async function load() {
   const [s, local] = await Promise.all([getSettings(), chrome.storage.local.get('tavilyKey')]);
+  for (const k of ['webMode','reasoningEffort','contextChars','historyTurns','maxTokens']) fields[k].value=String(s[k] ?? DEFAULT_SETTINGS[k]);
   fields.apiKey.value = s.apiKey || '';
   fields.baseUrl.value = s.baseUrl || DEFAULT_SETTINGS.baseUrl;
   fields.model.value = s.model || DEFAULT_SETTINGS.model;
@@ -46,6 +48,7 @@ $('toggle-key').addEventListener('click', (e) => {
 
 function collect() {
   return {
+    webMode:fields.webMode.value,reasoningEffort:fields.reasoningEffort.value,contextChars:Number(fields.contextChars.value),historyTurns:Number(fields.historyTurns.value),maxTokens:Number(fields.maxTokens.value),
     apiKey: fields.apiKey.value.trim(),
     baseUrl: fields.baseUrl.value.trim() || DEFAULT_SETTINGS.baseUrl,
     model: fields.model.value.trim() || DEFAULT_SETTINGS.model,

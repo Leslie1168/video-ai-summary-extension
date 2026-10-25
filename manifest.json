@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "视频AI总结 · B站/抖音",
-  "version": "1.2.2",
+  "version": "1.6.0",
   "description": "在 B站 / 抖音 视频页一键提取字幕、弹幕与文案，用 DeepSeek 生成结构化 AI 总结。B站字幕按「签名接口 → 官方AI文稿 → 无签名接口」三渠道自动降级。 支持视频连续追问与联网搜索，附可点击来源。",
   "minimum_chrome_version": "114",
   "permissions": [
@@ -9,7 +9,9 @@
     "storage",
     "tabs",
     "scripting",
-    "declarativeNetRequest"
+    "declarativeNetRequest",
+    "activeTab",
+    "unlimitedStorage"
   ],
   "host_permissions": [
     "*://*.bilibili.com/*",
