@@ -64,12 +64,31 @@ let lastUrl = '';
 const chat = initChat({
   getContext: () => ({video:state.video, summary:state.markdown, generating:state.generating, tabId:state.tabId, model:state.modelName, summaryTrace:state.summaryTrace,summaryPending:state.archiveSummaryPending}),
   restoreSummary: (summary,record) => {
+    if(record){
+      state.summaryTrace=record.summaryTrace || [];state.archiveSummaryPending=!!record.summaryPending;
+      show($('btn-summary-continue'),!!record.summaryPending && !!summary);
+      if(record.summaryPending)setStatus('上次切换页面时总结未完成；已恢复收到的内容。');
+    }
     if (!summary) return;
-    if(record){state.summaryTrace=record.summaryTrace || [];state.archiveSummaryPending=!!record.summaryPending;}
     state.markdown = summary; paint(false); show(el.viewResult,true);
     el.btnGenerate.textContent = '重新生成'; chat.update();
   },
   seek: time => { if (state.tabId) chrome.tabs.sendMessage(state.tabId,{type:'SEEK_VIDEO',time:tsToSec(time)}).catch(()=>{}); },
+});
+
+// The router waits for this acknowledgement before destroying the video iframe.
+window.addEventListener('message',event=>{
+  if(event.source!==window.parent||event.origin!==location.origin||event.data?.type!=='route-away')return;
+  (async()=>{
+    if(state.generating){
+      state.archiveSummaryPending=true;
+      try{state.port?.postMessage({type:'abort'});}catch{}
+      finish('已切换页面；总结未完成，已保存收到的内容。');
+    }
+    if(chat.isBusy())chat.abort();
+    try{await chat.save();uploadRecord();}
+    finally{window.parent.postMessage({type:'route-away-done',token:event.data.token},location.origin);}
+  })();
 });
 
 // ---------------------------------------------------------------- 工具
@@ -313,6 +332,22 @@ function startGenerate() {
   port.postMessage({ type: 'start', video: state.video, style: state.style });
 }
 
+/** 记忆记录写进本地之后，立刻把这一条推到坚果云 */
+function uploadRecord() {
+  try {
+    const record = chat.snapshot();
+    if (!record?.memoryId) return;
+    chrome.runtime
+      .sendMessage({ type: 'CLOUD_PUT', key: `video-memory:${record.memoryId}` })
+      .then((res) => {
+        if (res && res.ok === false) console.warn('[知页] 云同步失败', res.error);
+      })
+      .catch((error) => console.warn('[知页] 云同步失败', error));
+  } catch (error) {
+    console.warn('[知页] 云同步失败', error);
+  }
+}
+
 function finish(statusText) {
   state.generating = false;
   if(state.summaryTrace.length)state.summaryTrace.push({at:Date.now(),text:statusText || '生成中断'});
@@ -328,7 +363,9 @@ function finish(statusText) {
   }
   state.port = null;
   chat.update();
-  if (statusText === '总结完成') void chat.save();
+  if (statusText === '总结完成') {
+    void chat.save().then(() => uploadRecord());
+  }
 }
 
 function handleGenError(message) {

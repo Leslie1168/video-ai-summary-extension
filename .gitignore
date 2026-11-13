@@ -1,19 +1,6 @@
-# 浏览器/系统产生的文件（Edge/Chrome 加载解压扩展时生成）
 _metadata/
-
-# 依赖与构建产物
-node_modules/
-dist/
-*.zip
 *.crx
-
-# 系统与编辑器
+*.zip
+node_modules/
 .DS_Store
 Thumbs.db
-.vscode/
-.idea/
-
-# 本地配置 / 日志 / 密钥
-.env
-.env.*
-*.log

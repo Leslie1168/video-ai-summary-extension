@@ -1,0 +1,498 @@
+/* 知页 · 排版刻度
+   黑白灰单一色系；字号由 --fs-base 一个变量驱动，全部用 calc 等比缩放，
+   行高、正文粗细、标题粗细也开放成变量，设置页改完写进 :root 即可整体生效。
+   字体优先 HarmonyOS Sans SC（HarmonyOS Sans 的西文/数字更整齐），再回落系统字体。
+   最后加载，覆盖 panel.css 与 studio.css 的字号与颜色。 */
+
+:root {
+  --fs-base: 14px;      /* 正文字号，可选 13–17 */;
+  --lh-base: 1.75;      /* 正文行高，可选 1.6 / 1.75 / 1.9 */;
+  --fw-body: 400;       /* 正文粗细，可选 300 / 400 / 500 */;
+  --fw-strong: 600;     /* 加粗行内文字 */;
+  --fw-head: 650;       /* 标题与小节名 */;
+}
+
+body {
+  font-family: "HarmonyOS Sans SC", "HarmonyOS Sans", -apple-system,
+    BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei UI", "PingFang SC",
+    system-ui, sans-serif;
+  font-size: var(--fs-base);
+  line-height: var(--lh-base);
+  font-weight: var(--fw-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* 顶栏 */
+.brand {
+  font-size: calc(var(--fs-base) * 1.07);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.brand small {
+  font-size: calc(var(--fs-base) * 0.82);
+  line-height: 1.4;
+  letter-spacing: 0;
+  margin-top: 2px;
+  font-weight: 400;
+}
+.icon-btn {
+  font-size: calc(var(--fs-base) * 1.2);
+}
+
+/* 视频信息卡 */
+.v-title {
+  font-size: calc(var(--fs-base) * 1.11);
+  line-height: 1.55;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  padding-right: 4px;
+}
+.v-author,
+.v-stats {
+  font-size: calc(var(--fs-base) * 0.86);
+  line-height: 1.6;
+}
+.badge {
+  font-size: calc(var(--fs-base) * 0.82);
+  padding: 3px 8px;
+}
+.video-card {
+  padding: 12px;
+  gap: 12px;
+}
+
+/* 控件 */
+.seg button {
+  font-size: calc(var(--fs-base) * 0.93);
+  padding: 7px 12px;
+}
+.primary {
+  font-size: calc(var(--fs-base) * 0.96);
+  font-weight: 650;
+}
+.status {
+  font-size: calc(var(--fs-base) * 0.86);
+  line-height: 1.6;
+}
+.result-label {
+  font-size: calc(var(--fs-base) * 0.89);
+  font-weight: var(--fw-head);
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+.ghost {
+  font-size: calc(var(--fs-base) * 0.86);
+  padding: 5px 9px;
+}
+
+/* ── 总结区：黑白卡片，没有彩色 ── */
+#output {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  padding: 18px 16px 16px;
+  box-shadow: var(--shadow);
+}
+
+.markdown {
+  font-size: var(--fs-base);
+  line-height: calc(var(--lh-base) * 1.06);
+  font-weight: var(--fw-body);
+  color: var(--text);
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+/* 小节名：字号最小，靠字重和字间距区分，配一条细线 */
+.markdown h2 {
+  font-size: calc(var(--fs-base) * 0.82);
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  margin: 22px 0 10px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--border);
+  text-transform: none;
+}
+.markdown h2:first-child {
+  margin-top: 0;
+}
+.markdown h3 {
+  font-size: calc(var(--fs-base) * 0.96);
+  font-weight: 650;
+  letter-spacing: 0;
+  color: var(--text);
+  margin: 18px 0 8px;
+}
+.markdown h1 {
+  font-size: calc(var(--fs-base) * 1.29);
+  font-weight: 700;
+  line-height: 1.45;
+  letter-spacing: -0.02em;
+  margin: 0 0 12px;
+}
+
+/* 每个小节的第一句当导读：放大、加粗、纯黑 */
+.markdown h2 + p,
+.markdown h3 + p {
+  font-size: calc(var(--fs-base) * 1.07);
+  font-weight: 650;
+  line-height: calc(var(--lh-base) * 1);
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.markdown p {
+  margin: 0 0 10px;
+}
+.markdown p:last-child {
+  margin-bottom: 0;
+}
+
+/* 行内强调：靠字重和底色，不靠颜色 */
+.markdown strong,
+.markdown b {
+  font-weight: var(--fw-strong);
+  color: var(--text);
+}
+.markdown em,
+.markdown i {
+  font-style: normal;
+  color: var(--text-dim);
+}
+.markdown mark {
+  background: rgba(0, 0, 0, 0.075);
+  color: var(--text);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-weight: var(--fw-strong);
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.16);
+}
+html[data-theme="dark"] .markdown mark {
+  background: rgba(255, 255, 255, 0.13);
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.26);
+}
+.markdown del {
+  color: var(--text-faint);
+}
+.markdown code {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, "Courier New", monospace;
+  font-size: calc(var(--fs-base) * 0.9);
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1px 5px;
+}
+.markdown pre {
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 11px 12px;
+  overflow-x: auto;
+  font-size: calc(var(--fs-base) * 0.9);
+  line-height: 1.65;
+}
+.markdown pre code {
+  background: none;
+  border: 0;
+  padding: 0;
+}
+
+.markdown hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 16px 0;
+}
+
+/* 列表：方形小点，黑白 */
+.markdown ul,
+.markdown ol {
+  padding-left: 0;
+  margin: 0 0 10px;
+  list-style: none;
+}
+.markdown ul > li {
+  position: relative;
+  padding-left: 15px;
+  margin-bottom: 11px;
+  font-size: calc(var(--fs-base) * 0.96);
+  line-height: calc(var(--lh-base) * 1.02);
+}
+.markdown ul > li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 0.62em;
+  width: 4px;
+  height: 4px;
+  border-radius: 1px;
+  background: var(--text-dim);
+}
+.markdown ol {
+  counter-reset: md-ol;
+}
+.markdown ol > li {
+  position: relative;
+  padding-left: 22px;
+  margin-bottom: 9px;
+  counter-increment: md-ol;
+}
+.markdown ol > li::before {
+  content: counter(md-ol);
+  position: absolute;
+  left: 0;
+  top: 0.15em;
+  font-size: calc(var(--fs-base) * 0.82);
+  font-weight: 700;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.markdown blockquote {
+  margin: 14px 0 0;
+  padding: 11px 13px;
+  border: 0;
+  border-left: 3px solid var(--text);
+  border-radius: 0 8px 8px 0;
+  background: var(--bg-soft);
+  color: var(--text-dim);
+  font-size: calc(var(--fs-base) * 0.96);
+  line-height: calc(var(--lh-base) * 1.02);
+}
+
+.markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: calc(var(--fs-base) * 0.93);
+  margin: 12px 0;
+}
+.markdown th,
+.markdown td {
+  border-bottom: 1px solid var(--border);
+  padding: 7px 8px;
+  text-align: left;
+}
+.markdown th {
+  font-weight: 650;
+  color: var(--text);
+}
+.markdown td {
+  color: var(--text-dim);
+}
+
+.markdown .ts,
+.markdown button.ts {
+  font-size: calc(var(--fs-base) * 0.82);
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.markdown button.ts:hover {
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+/* 空状态与推荐问题 */
+.empty-title {
+  font-size: calc(var(--fs-base) * 1.29);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+.empty-sub {
+  font-size: calc(var(--fs-base) * 0.93);
+  line-height: 1.7;
+  color: var(--text-dim);
+}
+.chat-placeholder p {
+  font-size: calc(var(--fs-base) * 0.93);
+  line-height: 1.7;
+}
+.suggestions button {
+  font-size: calc(var(--fs-base) * 0.89);
+  padding: 7px 10px;
+}
+
+/* 对话 */
+.message-label {
+  font-size: calc(var(--fs-base) * 0.82);
+  letter-spacing: 0.04em;
+  font-weight: var(--fw-head);
+  color: var(--text-dim);
+}
+.message .markdown {
+  font-size: var(--fs-base);
+  line-height: calc(var(--lh-base) * 1.02);
+}
+.message .markdown h3 {
+  font-size: calc(var(--fs-base) * 1.04);
+}
+.chat-error {
+  font-size: calc(var(--fs-base) * 0.93);
+  line-height: 1.7;
+  padding: 8px 11px;
+}
+.source-card span {
+  font-size: calc(var(--fs-base) * 0.82);
+}
+.source-card small {
+  font-size: calc(var(--fs-base) * 0.75);
+}
+
+/* 输入区 */
+#chat-input {
+  font-size: var(--fs-base);
+  line-height: 1.65;
+  min-height: 46px;
+}
+#chat-input::placeholder {
+  font-size: var(--fs-base);
+}
+.web-toggle {
+  font-size: calc(var(--fs-base) * 0.82);
+  padding: 6px 9px;
+}
+#chat-scope {
+  font-size: calc(var(--fs-base) * 0.79);
+}
+.send-btn {
+  font-size: calc(var(--fs-base) * 1.36);
+}
+.send-btn.stop {
+  font-size: calc(var(--fs-base) * 0.93);
+}
+.composer-foot {
+  font-size: calc(var(--fs-base) * 0.79);
+  line-height: 1.5;
+}
+
+/* 折叠设置 */
+.ai-controls,
+.vision-controls {
+  font-size: calc(var(--fs-base) * 0.93);
+}
+.ai-controls summary,
+.vision-controls summary {
+  font-size: calc(var(--fs-base) * 0.93);
+  font-weight: 600;
+}
+.ai-controls small {
+  font-size: calc(var(--fs-base) * 0.82);
+}
+.ai-grid label {
+  font-size: calc(var(--fs-base) * 0.86);
+}
+.ai-grid select,
+.ai-grid input {
+  font-size: calc(var(--fs-base) * 0.93);
+}
+.ai-controls .hint,
+.vision-controls .hint {
+  font-size: calc(var(--fs-base) * 0.86);
+  line-height: 1.65;
+}
+.search-settings {
+  font-size: calc(var(--fs-base) * 0.86);
+}
+.search-settings input {
+  font-size: calc(var(--fs-base) * 0.93);
+}
+.search-settings small {
+  font-size: calc(var(--fs-base) * 0.79);
+}
+.answer-progress {
+  font-size: calc(var(--fs-base) * 0.86);
+  line-height: 1.65;
+}
+.answer-progress p {
+  font-size: calc(var(--fs-base) * 0.79);
+}
+
+/* 横幅 */
+.archive-banner strong {
+  font-size: calc(var(--fs-base) * 0.96);
+}
+.archive-banner small {
+  font-size: calc(var(--fs-base) * 0.82);
+}
+.bg-warning {
+  font-size: calc(var(--fs-base) * 0.86);
+  line-height: 1.65;
+}
+.bg-warning strong {
+  font-size: calc(var(--fs-base) * 0.89);
+}
+.bg-warning button {
+  font-size: calc(var(--fs-base) * 0.86);
+}
+
+/* ── 文字网页面板（reader） ── */
+#site {
+  font-size: calc(var(--fs-base) * 0.82);
+  line-height: 1.4;
+}
+.toolbar .primary,
+#summarize {
+  font-size: calc(var(--fs-base) * 0.96);
+}
+#stop {
+  font-size: calc(var(--fs-base) * 0.86);
+}
+#mode {
+  font-size: calc(var(--fs-base) * 0.89);
+  padding: 7px 9px;
+}
+#status {
+  font-size: calc(var(--fs-base) * 0.89);
+  line-height: 1.65;
+}
+#meta {
+  font-size: calc(var(--fs-base) * 0.82);
+  line-height: 1.6;
+}
+.bubble {
+  font-size: var(--fs-base);
+  line-height: calc(var(--lh-base) * 1.02);
+}
+.bubble .label {
+  font-size: calc(var(--fs-base) * 0.82);
+  letter-spacing: 0.04em;
+  font-weight: var(--fw-head);
+}
+.bubble.user {
+  font-size: var(--fs-base);
+}
+.refs,
+.refs a,
+a.jump {
+  font-size: calc(var(--fs-base) * 0.82);
+}
+#question {
+  font-size: var(--fs-base);
+  line-height: 1.6;
+}
+#question::placeholder {
+  font-size: var(--fs-base);
+}
+#ask button {
+  font-size: calc(var(--fs-base) * 0.96);
+  font-weight: 650;
+}
+
+@media (max-width: 350px) {
+  #chat-scope {
+    font-size: calc(var(--fs-base) * 0.75);
+  }
+  .suggestions button {
+    font-size: calc(var(--fs-base) * 0.86);
+    padding: 6px 8px;
+  }
+  .seg button {
+    padding: 6px 9px;
+  }
+}

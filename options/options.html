@@ -3,12 +3,14 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>视频AI总结 · 设置</title>
+    <title>知页 · 设置</title>
+    <link rel="stylesheet" href="options.css" />
+    <script src="../panel/theme.js"></script>
     <link rel="stylesheet" href="options.css" />
   </head>
   <body>
     <div class="wrap">
-      <h1>视频AI总结 · 设置</h1>
+      <h1>知页 · 设置</h1>
       <p class="lead">
         填入 DeepSeek 的 API Key 即可开始使用。模型 Key 保存在浏览器扩展设置中（可能随浏览器同步），仅发送到你配置的模型接口。联网开启时，AI 会结合当前问题和视频素材生成关键词（也可手动填写），并发送到搜索服务，检索摘录与视频素材一并提交给模型。
       </p>
@@ -57,7 +59,7 @@
       </section>
 
       <section class="card">
-        <h2>2 · 总结偏好</h2><div class="field"><label>联网模式<select id="webMode"><option value="fast">快速 · 推荐</option><option value="deep">深入 · 使用思考设置</option></select></label><label>思考强度<select id="reasoningEffort"><option value="none">关闭 · 直接回答</option><option value="low">低 · 快速思考</option><option value="high">高 · 深入思考</option><option value="max">最高 · 复杂分析</option></select></label>
+        <h2>2 · 总结偏好</h2><div class="field"><label>联网后的思考档<select id="webMode"><option value="fast">快速 · 推荐</option><option value="deep">深入 · 使用思考设置</option></select></label><label>思考强度<select id="reasoningEffort"><option value="none">关闭 · 直接回答</option><option value="low">低 · 快速思考</option><option value="high">高 · 深入思考</option><option value="max">最高 · 复杂分析</option></select></label>
 <label>素材上下文<select id="contextChars"><option value="16000">约 1.6 万字</option><option value="32000">约 3.2 万字</option><option value="64000">约 6.4 万字</option><option value="128000">约 12.8 万字</option></select></label>
 <label>历史对话<select id="historyTurns"><option value="0">不带历史</option><option value="4">最近 4 轮</option><option value="8">最近 8 轮</option><option value="20">最近 20 轮</option></select></label>
 <label>单次输出额度<select id="maxTokens"><option value="8192">8K token</option><option value="16384">16K token · 推荐</option><option value="32768">32K token</option><option value="65536">64K token</option></select></label></div><p class="hint">思考强度仅对官方 DeepSeek 接口生效。上下文为素材与历史的文字字符预算；本轮问题、网页摘录和图片另计。快速联网关闭思考、最多 8K 输出、不自动续写；深入联网使用所选思考设置。达到上限可手动继续。</p>
@@ -65,7 +67,7 @@
         <label class="field">
           <span class="label">默认详细程度</span>
           <select id="style">
-            <option value="brief">速览 — 只看结论</option>
+            <option value="brief">精简 — 只看结论</option>
             <option value="standard">标准 — 4~7 条要点</option>
             <option value="detailed">精读 — 8~15 条要点</option>
           </select>
@@ -90,7 +92,55 @@
       </section>
 
       <section class="card">
-        <h2>3 · 联网搜索</h2>
+        <h2>3 · 外观与字号</h2>
+        <div class="field">
+          <label>主题<select id="themeMode">
+            <option value="auto" selected>跟随系统</option>
+            <option value="light">始终浅色</option>
+            <option value="dark">始终深色</option>
+          </select></label>
+        </div>
+        <div class="field">
+          <label>正文大小<select id="uiFontSize">
+            <option value="13">13 px · 紧凑</option>
+            <option value="14" selected>14 px · 默认</option>
+            <option value="15">15 px · 偏大</option>
+            <option value="16">16 px · 大</option>
+            <option value="17">17 px · 很大</option>
+          </select></label>
+          <label>行距<select id="uiLineHeight">
+            <option value="1.6">1.6 · 紧凑</option>
+            <option value="1.75" selected>1.75 · 默认</option>
+            <option value="1.9">1.9 · 宽松</option>
+            <option value="2.05">2.05 · 很宽</option>
+          </select></label>
+          <label>正文粗细<select id="uiFontWeight">
+            <option value="300">300 · 细</option>
+            <option value="400" selected>400 · 常规</option>
+            <option value="500">500 · 中黑</option>
+          </select></label>
+          <label>标题粗细<select id="uiHeadingWeight">
+            <option value="600">600 · 半粗</option>
+            <option value="650" selected>650 · 推荐</option>
+            <option value="700">700 · 粗</option>
+            <option value="900">900 · 极粗</option>
+          </select></label>
+        </div>
+        <p class="hint">保存后侧栏立刻生效，不用重开。界面只用黑白灰，错误提示保留红色；字体固定 HarmonyOS Sans SC，本机没装会自动回落到系统字体。</p>
+      </section>
+
+      <section class="card">
+        <h2>4 · 人设</h2>
+        <label class="checkbox-field"><input type="checkbox" id="personaOn"> 生成总结和回答时启用</label>
+        <p class="hint">写给模型的自我介绍，最多 1000 字。只改称呼和语气——事实、数字、时间戳、引用编号、小节结构都不会变。</p>
+        <label class="field"><span class="label">人设内容</span>
+          <textarea id="personaText" rows="6" maxlength="1000" placeholder="例如：你叫小璃，叫我老板。说话短，别用敬语，别列一二三。"></textarea>
+          <span class="hint"><span id="persona-count">0</span> / 1000　这段不会进入联网判定，也不会混进搜索关键词。</span>
+        </label>
+      </section>
+
+      <section class="card">
+        <h2>5 · 联网搜索</h2>
         <label class="field"><span class="label">搜索服务</span>
           <select id="searchProvider"><option value="auto">自动搜索 · 360 / 搜狗（无需 Key）</option><option value="bing">Bing · 无需额外 Key</option><option value="tavily">Tavily · 搜索 API（可选）</option></select>
           <span class="hint">默认检索 360 / 搜狗公开网页摘录，可能受搜索站点限流或相关性影响。若需要更丰富的摘录，可改用 Tavily。</span>
@@ -100,6 +150,45 @@
           <span class="hint">在 <a href="https://app.tavily.com" target="_blank" rel="noreferrer">Tavily</a> 获取；用量和费用以服务商为准。搜索 Key 仅保存在本机，不随浏览器同步。</span>
         </label>
         <p class="hint">在侧边栏输入框左下角开启「联网搜索」。关闭时仅依据本视频回答；开启时显示本次搜索来源。检索失败会明确提示，不会假装已联网。</p>
+      </section>
+
+      <section class="card">
+        <h2>6 · 坚果云同步</h2>
+        <label class="field"><span class="label">WebDAV 地址</span>
+          <input id="davUrl" type="url" spellcheck="false" placeholder="https://dav.jianguoyun.com/dav/" />
+          <span class="hint">坚果云固定是 <code>https://dav.jianguoyun.com/dav/</code>，别的 WebDAV 也能填。</span>
+        </label>
+        <label class="field"><span class="label">账号（邮箱）</span>
+          <input id="davUser" type="email" autocomplete="off" spellcheck="false" placeholder="you@example.com" />
+        </label>
+        <label class="field"><span class="label">应用密码</span>
+          <div class="inline-field">
+            <input id="davPass" type="password" autocomplete="off" spellcheck="false" placeholder="坚果云 → 账户信息 → 安全选项 → 添加应用密码" />
+            <button id="toggle-dav-pass" type="button" class="ghost">显示</button>
+          </div>
+          <span class="hint">不是登录密码。存在本机 <code>storage.local</code>，不随浏览器账号同步。</span>
+        </label>
+        <label class="field"><span class="label">云端文件夹</span>
+          <input id="davDir" type="text" spellcheck="false" placeholder="知页" />
+          <span class="hint">几个浏览器都填同一个文件夹；各自在下面再开一层设备子目录，互不覆盖。</span>
+        </label>
+        <label class="field"><span class="label">这台设备的名字</span>
+          <input id="davDevice" type="text" spellcheck="false" placeholder="edge · 桌面" />
+          <span class="hint" id="dav-device-id">用于区分云端子目录，只在本机生效。</span>
+        </label>
+        <label class="field"><span class="label">云端上限</span>
+          <select id="davLimitMB"><option value="50">50 MB · 约 1700 条</option><option value="200" selected>200 MB · 约 6800 条</option><option value="500">500 MB · 约 17000 条</option><option value="1000">1000 MB · 约 34000 条</option></select>
+          <span class="hint">超过后从最久没动过的记录开始删，删除会同步到所有设备。</span>
+        </label>
+        <label class="field checkbox-field"><input id="davAuto" type="checkbox" checked />
+          <span>每轮总结 / 追问完成就上传这一条</span>
+        </label>
+        <div class="inline-field">
+          <button id="btn-dav-test" type="button" class="ghost">测试连接</button>
+          <button id="btn-dav-sync" type="button" class="ghost">立即同步</button>
+          <span id="dav-result" class="save-result"></span>
+        </div>
+        <p class="hint">只上传网页阅读记录和视频记忆，不含 API Key、不含设置、不含缓存片段。改动按条增量上传，不会整包重传。</p>
       </section>
 
       <div class="actions">

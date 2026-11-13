@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">知页，视频与网页阅读图标</title>
+  <desc id="desc">黑色圆角底，一本打开的书，右页包含播放标记</desc>
+  <rect x="3" y="3" width="122" height="122" rx="29" fill="#0A0A0A"/>
+  <path d="M24 31c15-6 28-5 40 2v66c-11-7-25-8-40-2V31Z" fill="#FFFFFF"/>
+  <path d="M104 31c-15-6-28-5-40 2v66c11-7 25-8 40-2V31Z" fill="#E6E6E6"/>
+  <path d="M64 33v66" stroke="#9A9A9A" stroke-width="3"/>
+  <path d="M40 49h11M40 61h11M40 73h8" stroke="#8C8C8C" stroke-width="4" stroke-linecap="round"/>
+  <path d="M77 50v29l21-14.5L77 50Z" fill="#111111"/>
+</svg>

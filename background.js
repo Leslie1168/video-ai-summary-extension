@@ -4,7 +4,10 @@
  */
 import { chatStream, chatOnce, getSettings, originOf } from './lib/llm.js';
 import { buildMessages } from './lib/prompts.js';
+import { loadPersona } from './lib/persona.js';
 import { registerChatPort } from './lib/chat-background.js';
+import { getConfig, pushOne, sync, deleteEverywhere, testCloud, getStatus } from './lib/cloudsync.js';
+import './reader/background.js';
 
 registerChatPort();
 
@@ -12,7 +15,7 @@ registerChatPort();
 chrome.runtime.onInstalled.addListener(() => {
   chrome.sidePanel
     .setPanelBehavior({ openPanelOnActionClick: true })
-    .catch((err) => console.warn('[视频AI总结] 侧边栏设置失败', err));
+    .catch((err) => console.warn('[知页] 侧边栏设置失败', err));
 });
 chrome.sidePanel
   ?.setPanelBehavior({ openPanelOnActionClick: true })
@@ -46,6 +49,7 @@ chrome.runtime.onConnect.addListener((port) => {
         style: msg.style || settings.style,
         customPrompt: msg.customPrompt ?? settings.customPrompt,
         contextChars: settings.contextChars,
+        persona: await loadPersona(),
       });
 
       let completion;
@@ -107,6 +111,63 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         }
         const granted = await chrome.permissions.request({ origins: [origin] });
         sendResponse({ ok: granted, origin });
+        return;
+      }
+
+      // ── 坚果云同步 ──
+      // 网页侧和记忆页都不直接碰 fetch：坚果云不给 CORS 头，必须由 SW 代劳。
+      if (msg?.type === 'CLOUD_ENSURE_PERMISSION') {
+        const cfg = await getConfig();
+        const origin = originOf(cfg.davUrl) || 'https://dav.jianguoyun.com/*';
+        const pattern = /\/\*$/.test(origin) ? origin : `${origin}/*`;
+        const granted = await chrome.permissions.request({ origins: [pattern] });
+        sendResponse({ ok: granted, origin: pattern });
+        return;
+      }
+
+      if (msg?.type === 'CLOUD_TEST') {
+        const cfg = { ...(await getConfig()), ...(msg.config || {}) };
+        const result = await testCloud(cfg);
+        sendResponse({ ok: true, ...result });
+        return;
+      }
+
+      if (msg?.type === 'CLOUD_PUT') {
+        const cfg = await getConfig();
+        if (!cfg.davAuto) {
+          sendResponse({ ok: true, skipped: '实时上传已关闭' });
+          return;
+        }
+        const result = await pushOne(cfg, msg.key);
+        sendResponse({ ok: true, ...result });
+        return;
+      }
+
+      if (msg?.type === 'CLOUD_SYNC') {
+        const cfg = { ...(await getConfig()), ...(msg.config || {}) };
+        const result = await sync(cfg);
+        sendResponse({ ok: true, ...result });
+        return;
+      }
+
+      if (msg?.type === 'CLOUD_DELETE') {
+        const cfg = await getConfig();
+        const result = await deleteEverywhere(cfg, msg.key);
+        sendResponse({ ok: true, ...result });
+        return;
+      }
+
+      if (msg?.type === 'CLOUD_STATUS') {
+        const [cfg, status] = await Promise.all([getConfig(), getStatus()]);
+        sendResponse({
+          ok: true,
+          status,
+          device: cfg.davDevice,
+          deviceId: cfg.davDeviceId,
+          dir: cfg.davDir,
+          auto: cfg.davAuto,
+          configured: Boolean(cfg.davUser && cfg.davPass),
+        });
         return;
       }
 

@@ -106,6 +106,25 @@ export function initChat({getContext, restoreSummary, seek}) {
     }
     setBackgroundWarning(true);
   }
+// 每次落盘后把这一条推到坚果云；1.5 秒合并成一次，流式保存不会把请求打爆。
+let cloudTimer = null;
+let cloudPending = '';
+function queueCloudUpload(id) {
+  if (!id) return;
+  clearTimeout(cloudTimer);
+  cloudPending = `video-memory:${id}`;
+  cloudTimer = setTimeout(() => {
+    const key = cloudPending;
+    if (!key) return;
+    try {
+      chrome.runtime
+        .sendMessage({ type: 'CLOUD_PUT', key })
+        .then((res) => { if (res && res.ok === false) console.warn('[知页] 云同步失败', res.error); })
+        .catch((error) => console.warn('[知页] 云同步失败', error));
+    } catch (error) { console.warn('[知页] 云同步失败', error); }
+  }, 1500);
+}
+
   async function save() {
     if (!key || (!getContext().summary && !turns.length)) return true;
     const itemKey = cacheKey();
@@ -113,6 +132,7 @@ export function initChat({getContext, restoreSummary, seek}) {
     try {
       if(getContext().video?.archived) await saveArchive(data);
       else {await saveConversation(itemKey,data);await chrome.storage.session.set({[itemKey]:data}).catch(()=>{});}
+      queueCloudUpload(memoryId);
       return true;
     } catch { status.textContent = '记忆保存失败；请保持面板打开并重试，当前对话仍可查看。'; return false; }
   }

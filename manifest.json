@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "视频AI总结 · B站/抖音",
-  "version": "1.6.0",
-  "description": "在 B站 / 抖音 视频页一键提取字幕、弹幕与文案，用 DeepSeek 生成结构化 AI 总结。B站字幕按「签名接口 → 官方AI文稿 → 无签名接口」三渠道自动降级。 支持视频连续追问与联网搜索，附可点击来源。",
+  "name": "知页 · 视频与网页 AI 阅读",
+  "version": "2.0.0",
+  "description": "视频看字幕、网页读正文，统一出一个总结；可追问、按需联网、每篇页面各自留档。",
   "minimum_chrome_version": "114",
   "permissions": [
     "sidePanel",
@@ -20,9 +20,12 @@
     "*://*.douyinvod.com/*",
     "*://*.byteimg.com/*",
     "*://*.zjcdn.com/*",
-    "https://api.deepseek.com/*"
+    "https://api.deepseek.com/*",
+    "https://www.bing.com/*",
+    "https://cn.bing.com/*"
   ],
   "optional_host_permissions": [
+    "https://dav.jianguoyun.com/*",
     "https://*/*",
     "http://localhost/*",
     "http://127.0.0.1/*"
@@ -32,7 +35,7 @@
     "type": "module"
   },
   "action": {
-    "default_title": "视频AI总结",
+    "default_title": "知页",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",
@@ -41,7 +44,7 @@
     }
   },
   "side_panel": {
-    "default_path": "panel/panel.html"
+    "default_path": "panel/router.html"
   },
   "options_page": "options/options.html",
   "icons": {

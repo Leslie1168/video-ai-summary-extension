@@ -1,36 +1,43 @@
+/* 知页 · 统一主题 token。黑白灰单一色系；只有错误保留红色。 */
 :root {
+  color-scheme: light;
   --bg: #ffffff;
-  --bg-soft: #f6f7f9;
+  --bg-soft: #f5f5f5;
   --bg-elev: #ffffff;
-  --border: #e5e7eb;
-  --text: #1a1d21;
-  --text-dim: #6b7280;
-  --text-faint: #9ca3af;
-  --accent: #2f6fed;
-  --accent-soft: rgba(47, 111, 237, 0.1);
-  --danger: #dc2626;
-  --ok: #16a34a;
-  --warn: #d97706;
+  --border: #e4e4e4;
+  --text: #0a0a0a;
+  --text-dim: #5a5a5a;
+  --text-faint: #8a8a8a;
+  --accent: #111111;
+  --accent-soft: rgba(0, 0, 0, 0.05);
+  --accent-ink: #ffffff;
+  --danger: #b42318;
+  --ok: #3f3f3f;
+  --warn: #6b5a2e;
   --radius: 10px;
-  --shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.08);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.06);
+  --brand-deep: #0a0a0a;
+  --brand-paper: #ffffff;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #16181d;
-    --bg-soft: #1d2027;
-    --bg-elev: #1f232b;
-    --border: #2c313b;
-    --text: #e8eaed;
-    --text-dim: #a1a8b3;
-    --text-faint: #6f7783;
-    --accent: #6b9bff;
-    --accent-soft: rgba(107, 155, 255, 0.14);
-    --danger: #f87171;
-    --ok: #4ade80;
-    --warn: #fbbf24;
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
-  }
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0c0c0c;
+  --bg-soft: #161616;
+  --bg-elev: #1a1a1a;
+  --border: #2b2b2b;
+  --text: #f2f2f2;
+  --text-dim: #a6a6a6;
+  --text-faint: #7d7d7d;
+  --accent: #f2f2f2;
+  --accent-soft: rgba(255, 255, 255, 0.07);
+  --accent-ink: #0a0a0a;
+  --danger: #f59387;
+  --ok: #d0d0d0;
+  --warn: #d6c08a;
+  --shadow: none;
+  --brand-deep: #f2f2f2;
+  --brand-paper: #0c0c0c;
 }
 
 * {
@@ -46,8 +53,10 @@ body {
 body {
   background: var(--bg);
   color: var(--text);
-  font: 13px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
-    "Microsoft YaHei", sans-serif;
+  font: 14px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB",
+    system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
   display: flex;
   flex-direction: column;
 }
@@ -76,6 +85,40 @@ body {
   font-weight: 600;
   font-size: 13px;
   letter-spacing: 0.2px;
+}
+
+.brand-symbol {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: var(--brand-deep);
+  color: var(--brand-paper);
+}
+
+.brand-symbol svg {
+  display: block;
+}
+
+.brand > div {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.brand small {
+  display: block;
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 0;
+  color: var(--text-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .brand .dot {
@@ -302,10 +345,10 @@ button.mini:hover {
 }
 
 .seg button.active {
-  background: var(--bg-elev);
-  color: var(--accent);
+  background: var(--border);
+  color: var(--text);
   font-weight: 600;
-  box-shadow: var(--shadow);
+  box-shadow: none;
 }
 
 button.primary {
@@ -313,7 +356,7 @@ button.primary {
   border: 0;
   border-radius: 8px;
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-ink);
   font-size: 12.5px;
   font-weight: 600;
   padding: 8px 12px;
@@ -496,7 +539,7 @@ button.ghost.danger:hover {
 
 .ts:hover {
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-ink);
 }
 
 .cursor::after {

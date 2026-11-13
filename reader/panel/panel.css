@@ -1,0 +1,247 @@
+/* 知页 · 文字网页面板。token 与基础排版来自 ../../panel/panel.css，这里只补网页侧的组件。 */
+:root {
+  font-family: "HarmonyOS Sans SC", "HarmonyOS Sans", -apple-system, "Segoe UI", "Microsoft YaHei UI", system-ui, sans-serif;
+  font-size: var(--fs-base, 14px);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* ---------- 顶栏 ---------- */
+.topbar .brand span { line-height: 1.25; }
+.topbar .brand small {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-dim);
+  font-size: calc(var(--fs-base, 14px) * 0.72);
+  font-weight: 400;
+  max-width: 26ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.brand-symbol svg { display: block; }
+
+/* ---------- 页面主体卡片（对齐视频侧 .video-card） ---------- */
+/* .video-card 的 display:flex 在 panel.css:199 后于 .hidden 定义，会盖掉 .hidden，这里自己控显隐 */
+.page-card { margin-bottom: 10px; align-items: flex-start; display: none; }
+.page-card.ready { display: flex; }
+
+.page-mark {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--brand-deep);
+  color: var(--brand-paper);
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: .02em;
+  user-select: none;
+}
+
+/* 站点缩写只有两个汉字时收一点 */
+.page-mark.wide { font-size: 13px; }
+
+/* ---------- 工具行 ---------- */
+main {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 14px;
+}
+
+.toolbar {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.toolbar select {
+  padding: 8px 6px;
+  min-width: 96px;
+  font: inherit;
+  font-size: calc(var(--fs-base, 14px) * 0.79);
+  color: var(--text-dim);
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+/* 详细程度三档；复用 panel.css 的 .seg，这里只把它压到和 select 同高同字号 */
+.toolbar .seg { align-self: stretch; align-items: center; }
+.toolbar .seg button {
+  font-size: calc(var(--fs-base, 14px) * 0.79);
+  padding: 0 9px;
+  height: 100%;
+  min-height: 30px;
+  letter-spacing: .02em;
+}
+.toolbar .seg button.active { letter-spacing: .04em; }
+
+#status {
+  margin: 12px 0 6px;
+  color: var(--text-dim);
+  font-size: calc(var(--fs-base, 14px) * 0.86);
+  line-height: 1.6;
+}
+
+#meta {
+  color: var(--text-faint);
+  font-size: calc(var(--fs-base, 14px) * 0.79);
+  line-height: 1.6;
+}
+
+#meta:not(:empty) {
+  padding: 6px 0 2px;
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+}
+
+/* ---------- 本页对话操作条 ---------- */
+/* .result-head 在 panel.css 里带 display:flex，这里靠 .ready 自己控显隐 */
+.reader-actions {
+  display: none;
+  margin: 12px 0 2px;
+}
+
+.reader-actions.ready { display: flex; }
+
+.reader-actions .result-label {
+  font-size: calc(var(--fs-base, 14px) * 0.72);
+  letter-spacing: .06em;
+}
+
+.reader-actions .result-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.reader-actions button {
+  min-height: 28px;
+  padding: 4px 11px;
+  font-size: calc(var(--fs-base, 14px) * 0.79);
+}
+
+/* ---------- 对话气泡 ---------- */
+.bubble {
+  margin: 10px 0;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-elev);
+  line-height: 1.72;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: calc(var(--fs-base, 14px) * 0.93);
+}
+
+.bubble.user {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+}
+
+.label {
+  font-size: calc(var(--fs-base, 14px) * 0.72);
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: 5px;
+}
+
+.bubble.user .label { color: var(--accent-text); }
+
+/* ---------- 引用 ---------- */
+.refs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.refs a,
+.jump {
+  color: var(--accent-text);
+  cursor: pointer;
+  text-decoration: none;
+  border-bottom: 1px solid var(--accent-line);
+}
+
+.refs a {
+  border: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-size: calc(var(--fs-base, 14px) * 0.72);
+  background: var(--bg-soft);
+}
+
+.refs a:hover,
+.jump:hover { border-color: var(--accent); }
+
+/* ---------- 提问框 ---------- */
+#ask {
+  flex-shrink: 0;
+  padding: 10px 12px 12px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  display: flex;
+  gap: 7px;
+  align-items: end;
+}
+
+#question {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  resize: none;
+  min-height: 40px;
+  max-height: 130px;
+  padding: 9px 10px;
+  font: inherit;
+  font-size: calc(var(--fs-base, 14px) * 0.93);
+  line-height: 1.66;
+  color: var(--text);
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  outline: none;
+}
+
+#question::placeholder { color: var(--text-faint); }
+
+#question:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+#ask button {
+  min-height: 38px;
+  flex: 0 0 auto;
+  min-width: 58px;
+  padding: 0 14px;
+  white-space: nowrap;
+}
+
+a { color: var(--accent-text); }
+
+@media (max-width: 350px) {
+  main { padding: 10px; }
+  #ask { padding: 8px 10px 10px; }
+  .toolbar select { min-width: 82px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
