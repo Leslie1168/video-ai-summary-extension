@@ -265,3 +265,33 @@
 
 回归：`node --test tests/*.test.js` **67 pass / 0 fail**。
 
+## 2026-11-14 · 推到 GitHub 与网络坑
+
+仓库：`https://github.com/Leslie1168/video-ai-summary-extension`。推的是 `534b9eb`，父节点就是远程原来的 `96c73be`，历史线性。
+
+**不用 force push 的原因**：远程早就有 5 条提交和 `v1.2.2`、`v1.6.0` 两条 tag。强推会把它们全抹掉。改用「本地内容接到远程 HEAD 之后」：
+
+```
+git branch backup/local-history        # 保住原来 6 条本地提交
+git remote add origin <url>
+git fetch origin main
+git reset --soft origin/main           # HEAD 过去，index 保留本地全部内容
+git checkout origin/main -- LICENSE release   # 远程独有的协议与发布包
+git commit -F %TEMP%\commitmsg.txt
+```
+
+结果 71 files changed / 4547 insertions / 460 deletions，删除零个文件。
+
+**网络坑（下次直接照拄）**：
+
+1. `GIT_CONFIG_SYSTEM=NUL` 会连系统级 `credential.helper=manager` 一起屏蔽，结果报 `could not read Username for 'https://github.com'`。它只应用于「凭据已写进 URL」的场景，不能当通用前置。
+2. 直连推会 `HTTP 408`（`RPC failed; curl 22` + `send-pack: unexpected disconnect`）—— 认证已经过了，是上传阶段超时。走本机 7897 端口的代理就成：
+
+```
+git -c http.proxy=http://127.0.0.1:7897 -c https.proxy=http://127.0.0.1:7897 push -u origin main
+```
+
+代理端口用 `Test-NetConnection 127.0.0.1 -Port 7897` 现场探，不要写死（这台机器 7890/10809/1080 都没开）。
+
+**推完必须核对远端**，不看退出码：`git ls-remote origin` 得 `refs/heads/main = 534b9ebcda31e46208d123ca331d1aa9a271c1ae`，与本地 HEAD 一致，两条 tag 仍在。
+
