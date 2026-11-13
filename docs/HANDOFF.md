@@ -18,8 +18,8 @@
 
 | 项 | 值 |
 | --- | --- |
-| 工作目录 | `C:\Users\zhang\WorkBuddy\2026-10-03-09-51-46\video-ai-summary\video-and-web-ai-extension` |
-| 原始视频扩展（**只读，不许改**） | `C:\Users\zhang\WorkBuddy\2026-10-03-09-51-46\video-ai-summary\视频AI总结-扩展 (2)\video-ai-summary-extension` |
+| 工作目录 | `<仓库根目录>` |
+| 原始视频扩展（**只读，不许改**） | `<原视频扩展目录>（只读参考，未随仓库分发）` |
 | 早期独立文字扩展（已于 2026-11-14 删除，334 个文件） | ~~`webpage-ai-reader-extension`~~ |
 | Git | 本地 `main`，**从未 commit、无 remote** |
 
@@ -194,7 +194,7 @@ export function createSessionStore(storage)  // { load(url), save(url,state), fl
 ## 8. 怎么验证（不花钱的部分）
 
 ```powershell
-cd C:\Users\zhang\WorkBuddy\2026-10-03-09-51-46\video-ai-summary\video-and-web-ai-extension
+cd <仓库根目录>
 node --test tests/*.test.js
 node --check panel/router.js
 node --check panel/panel.js
